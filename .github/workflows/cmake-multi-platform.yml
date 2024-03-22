@@ -42,7 +42,7 @@ jobs:
           - os: windows-latest
             c_compiler: clang
           - os: ubuntu-latest
-            c_compiler: cl
+            c_compiler: cl clang
 
     steps:
     - uses: actions/checkout@v3
