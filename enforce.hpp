@@ -19,7 +19,7 @@
        [&](std::ostringstream& ENFORCE_PP_CAT(tmpBuffer, __LINE__) ) {ENFORCE_PP_CAT(tmpBuffer, __LINE__) << first __VA_OPT__(<< __VA_ARGS__) ;}
 
 #define ENFORCE(exp, ...) \
-  jag::enforce(exp  __VA_OPT__(, PROCESS_ELEMENTS(__VA_ARGS__) ), [](std::ostringstream& buffer) {buffer << ":Expression '" ENFORCE_PP_STRINGIZE(exp) "' failed";}) )
+  jag::enforce(exp  __VA_OPT__(, PROCESS_ELEMENTS(__VA_ARGS__) ), [](std::ostringstream& buffer) {buffer << ":Expression '" ENFORCE_PP_STRINGIZE(exp) "' failed";} )
 
 namespace jag {
 	namespace detail {
@@ -75,7 +75,7 @@ namespace jag {
 					if (!t()) // T itself might be a validator. We will test it here
 						return false;
 
-				return (... && validate_impl(std::forward<T>(t), std::forward<Args>(args)));  // Unary right fold
+				return (... && validate_impl(t, std::forward<Args>(args)));  // Unary right fold
 			}
 
 			if constexpr (std::convertible_to<T, bool>) // If there is no validator, but T is convertible to bool, that is the result...
@@ -121,7 +121,7 @@ namespace jag {
 			{
 				t(buffer);
 			}
-			(..., append_impl(buffer, std::forward<T>(t), std::forward<Args>(args)));  // Unary right fold
+			(..., append_impl(buffer, t, std::forward<Args>(args)));  // Unary right fold
 			if (buffer.tellp() == std::streampos(0))
 				buffer << "Expression has failed";
 			return buffer.str();
@@ -145,7 +145,7 @@ namespace jag {
 	template<typename T, typename... Args>
 	decltype(auto) enforce(T&& t, Args... args) {
 		if (detail::wrong(std::forward<T>(t), std::forward<Args>(args)...)) {
-			std::string const msg = detail::append(std::forward<T>(t), std::forward<Args>(args)...);
+			std::string const msg = detail::append(t, std::forward<Args>(args)...);
 			detail::raise(msg, std::forward<T>(t), std::forward<Args>(args)...);
 		}
 		return std::forward<T>(t);

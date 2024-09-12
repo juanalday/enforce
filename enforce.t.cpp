@@ -116,3 +116,8 @@ TEST(enforce, perfect_forwarding)
 	EXPECT_THROW(tester t = enforce(tester()), std::runtime_error);
 	EXPECT_THROW(tester t = enforce(tester()), std::runtime_error);
 }
+
+TEST(enforce, macro_calling)
+{
+	ENFORCE(true);
+}
