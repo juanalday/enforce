@@ -1,5 +1,6 @@
 #ifndef JAG_ENFORCE_HPP
 #define JAG_ENFORCE_HPP
+
 #include <functional>
 #include <type_traits>
 #include <utility>
@@ -68,7 +69,7 @@ namespace jag {
 			return true;
 		}
 		template<typename T, typename... Args>
-		bool validate(T&& t, Args... args) {
+		bool validate(T&& t, Args&&... args) {
 			if constexpr (has_validator<T, Args...>()) // So in my sequence, there is a validator..
 			{
 				if constexpr (validator<T>)
@@ -85,7 +86,7 @@ namespace jag {
 
 
 		template<typename T, typename... Args>
-		constexpr bool wrong(T&& t, Args... args) {
+		constexpr bool wrong(T&& t, Args&& ... args) {
 			return !validate(std::forward<T>(t), std::forward<Args>(args)...);
 		}
 
@@ -111,7 +112,7 @@ namespace jag {
 
 		}
 		template<typename T, typename... Args>
-		std::string append(T&& t, Args... args) {
+		std::string append(T&& t, Args&& ... args) {
 			std::ostringstream buffer;
 			if constexpr (stringable<T>)
 			{
@@ -136,14 +137,14 @@ namespace jag {
 			}
 		}
 		template<typename T, typename... Args>
-		void raise(std::string const& msg, T&& t, Args... args) {
+		void raise(std::string const& msg, T&& t, Args&& ... args) {
 			(raise_impl(msg, std::forward<T>(t)), ..., raise_impl(msg, std::forward<Args>(args)));
 			throw std::runtime_error(msg); // IF no thrower function exists, I send a runtime_error myself
 		}
 
 	}
 	template<typename T, typename... Args>
-	decltype(auto) enforce(T&& t, Args... args) {
+	decltype(auto) enforce(T&& t, Args&& ... args) {
 		if (detail::wrong(std::forward<T>(t), std::forward<Args>(args)...)) {
 			std::string const msg = detail::append(t, std::forward<Args>(args)...);
 			detail::raise(msg, std::forward<T>(t), std::forward<Args>(args)...);
