@@ -4,6 +4,7 @@
 #include <type_traits>
 #include <gtest/gtest.h>
 
+
 struct tester {
     tester()
     {
@@ -20,7 +21,7 @@ struct tester {
     {
 		throw std::runtime_error("Move copy constructor invoked");
     }
-    tester& operator=(tester&&)
+    tester& operator=(tester&&) 
     {
 		throw std::runtime_error("Move assignment operator invoked");
     }
@@ -31,6 +32,37 @@ struct tester {
 
 using jag::enforce;
 using namespace jag::detail;
+
+TEST(enforce, can_validate)
+{
+	EXPECT_FALSE(can_validate(true)); // No validator function
+	EXPECT_FALSE(can_validate(false)); // No validator function
+	EXPECT_FALSE(can_validate([] {return 1; })); // Standalone validator, no arguments, but doesn't return bool
+	EXPECT_TRUE(can_validate([] {return true; })); // Standalone validator, no arguments, returning boolean
+	EXPECT_TRUE(can_validate([] {return false; })); // Standalone validator, no arguments, returning boolean
+	EXPECT_TRUE(can_validate(42, [](auto) {return true; })); // Standalone validator, single argument of same type as first argument to can_validate, returning boolean
+	EXPECT_TRUE(can_validate(42, [](auto) {return false; })); // Standalone validator, single argument of same type as first argument to can_validate, returning boolean
+	EXPECT_TRUE(can_validate(42, [](int) {return false; })); // Standalone validator, single argument of same type as first argument to can_validate, returning boolean
+	EXPECT_TRUE(can_validate(42, [](double) {return false; })); // Standalone validator, single argument of same type as first argument to can_validate, returning boolean
+	EXPECT_FALSE(can_validate(42, [](int, double) {return true; })); // Multiargument validator. 
+
+	// Multiple arguments
+	EXPECT_FALSE(can_validate(true, [] {return 0; }));
+	EXPECT_FALSE(can_validate(false, [] {return 0; })); 
+	EXPECT_FALSE(can_validate([] {return 1; }, [] {return 1; }));
+	EXPECT_TRUE(can_validate(false, [] {return true; })); 
+	EXPECT_TRUE(can_validate(false, [](auto) {return true; })); 
+	EXPECT_TRUE(can_validate(false, [] {return true; }, [] { })); 
+	EXPECT_TRUE(can_validate(false, [](auto) {}, [] {return true; })); 
+
+	EXPECT_TRUE(can_validate([] {return false; }, [] {}));
+	EXPECT_TRUE(can_validate(42, [](auto) {return true; }, [] {}));
+	EXPECT_TRUE(can_validate(42, [] {}, [](auto) {return true; }));
+	EXPECT_TRUE(can_validate(42, [] {}, [](auto) {return false; }));
+	EXPECT_TRUE(can_validate(42, [] {}, [](int) {return false; }));
+	EXPECT_TRUE(can_validate(42, [] {}, [](double) {return false; }));
+	EXPECT_FALSE(can_validate(42, [] {}, [](int, double) {return true; }));
+}
 
 TEST(enforce, no_arguments)
 {

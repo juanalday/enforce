@@ -25,16 +25,10 @@
 namespace jag {
 	namespace detail {
 
-		template <class T>
-		concept same_as_bool_impl = std::same_as<T, bool>;
-		template <class T>
-		concept same_as_bool = same_as_bool_impl<T> && requires(T && t) {
-			{ !static_cast<T&&>(t) } -> same_as_bool_impl;
+		//template <class T>concept same_as_bool = std::same_as<T, bool>&& requires(T&& t) { { !static_cast<T&&>(t) } -> std::same_as<bool>; };
+		template <class T>concept same_as_bool_impl = std::same_as<T, bool>;
+		template <class T>concept same_as_bool = same_as_bool_impl<T> && requires(T && t) { { !static_cast<T&&>(t) } -> same_as_bool_impl; };
 
-		};
-
-		template <class F, class... Args>
-		concept validator = std::regular_invocable<F, Args...>&& same_as_bool<std::invoke_result_t<F, Args...>>;
 		template<class F, class... Args>
 		concept stringable = std::regular_invocable<F, Args...>&& std::convertible_to<std::invoke_result_t<F, Args...>, std::string>;
 		template<class F, class... Args>
@@ -46,17 +40,14 @@ namespace jag {
 		template<class F>
 		concept raiser = std::regular_invocable<F, std::string >&& std::convertible_to< std::invoke_result_t<F, std::string>, void>;
 
-		template<typename F>
-		constexpr bool has_validator() {return validator<F>;}
-
-		template<typename T, typename F, typename... Args>
-		constexpr bool has_validator() {return validator<F, T> || validator <F> || has_validator<T, Args...>();}
-
-	
-
-
+		template <class F, class... Args>concept validator = std::regular_invocable<F, Args...>&& same_as_bool<std::invoke_result_t<F, Args...>>;
+		
+		template<typename T>consteval bool can_validate() {return validator<T>;}
+		template<typename T, typename F, typename... Args>consteval bool can_validate() {return validator<F, T> || validator <F> || can_validate<T, Args...>();}
+		template<typename... Args>consteval bool can_validate(Args&&... args) {return can_validate<Args...>();}
+		
 		template<typename T, typename F>
-		bool validate_impl(T&& t, F&& f)
+		constexpr bool validate_impl(T&& t, F&& f)
 		{
 			if constexpr (validator<F>)
 			{
@@ -69,8 +60,8 @@ namespace jag {
 			return true;
 		}
 		template<typename T, typename... Args>
-		bool validate(T&& t, Args&&... args) {
-			if constexpr (has_validator<T, Args...>()) // So in my sequence, there is a validator..
+		constexpr bool validate(T&& t, Args&&... args) {
+			if constexpr (can_validate<T, Args...>()) // So in my sequence, there is a validator..
 			{
 				if constexpr (validator<T>)
 					if (!t()) // T itself might be a validator. We will test it here
